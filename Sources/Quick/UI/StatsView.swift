@@ -5,7 +5,7 @@ struct StatsView: View {
     @State private var report: StatsReport?
     @State private var period: StatsPeriod = .week
 
-    static let windowSize = CGSize(width: 880, height: 600)
+    static let windowSize = CGSize(width: 880, height: 570)
 
     var body: some View {
         ScrollView {
@@ -169,10 +169,6 @@ struct StatsView: View {
 
             ProgressView(value: min(max(totals.conversion, 0), 1))
                 .progressViewStyle(.linear)
-
-            Text("Остальные открытия — курсор просто проехал мимо челки")
-                .font(.system(size: 11))
-                .foregroundStyle(.tertiary)
         }
     }
 
