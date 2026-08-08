@@ -16,7 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
 
-    /// Перезапуск не должен оставлять вторую шторку на той же челке.
+    /// Перезапуск не должен оставлять вторую шторку на той же чёлке.
     private func terminateOtherInstances() {
         guard let identifier = Bundle.main.bundleIdentifier else { return }
         NSRunningApplication.runningApplications(withBundleIdentifier: identifier)

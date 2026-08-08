@@ -7,11 +7,7 @@ import SwiftUI
 @MainActor
 final class SettingsWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
-    private let folderProvider: () -> URL
-
-    init(folderProvider: @escaping () -> URL) {
-        self.folderProvider = folderProvider
-    }
+    private let statsWindow = StatsWindowController()
 
     func show() {
         let window = existingWindow ?? makeWindow()
@@ -36,7 +32,9 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         window.title = "Quick"
         window.isReleasedWhenClosed = false
         window.delegate = self
-        let hosting = NSHostingView(rootView: SettingsView(folder: folderProvider()))
+        let hosting = NSHostingView(rootView: SettingsView(
+            onOpenStats: { [statsWindow] in statsWindow.show() }
+        ))
         window.contentView = hosting
         // Размер окна — по фактическому размеру содержимого, а не по числу,
         // угаданному на глаз.

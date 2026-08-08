@@ -2,13 +2,13 @@ import AppKit
 import Combine
 import SwiftUI
 
-/// Связывает челку, окно панели и хранилище скриншотов.
+/// Связывает чёлку, окно панели и хранилище скриншотов.
 @MainActor
 final class NotchController {
     private let store: ScreenshotStore
     private let state = PanelState()
     private let selection = SelectionStore()
-    private lazy var settingsWindow = SettingsWindowController { [store] in store.folder }
+    private lazy var settingsWindow = SettingsWindowController()
 
     private var geometry: NotchGeometry?
     private var hoverWindow: PassiveWindow?
@@ -167,10 +167,10 @@ final class NotchController {
 
     // MARK: - Открытие и закрытие
 
-    /// Открывать только когда курсор действительно в челке, кто бы ни прислал
+    /// Открывать только когда курсор действительно в чёлке, кто бы ни прислал
     /// событие. Окно панели накрывает верхние ~190 pt экрана, и его tracking
     /// area срабатывает даже после того, как окно убрано с экрана, — иначе
-    /// шторка выезжала бы на подходе к челке, а не по достижении.
+    /// шторка выезжала бы на подходе к чёлке, а не по достижении.
     private func handleEnter() {
         if isOpen {
             closeWork?.cancel()
@@ -199,6 +199,7 @@ final class NotchController {
         panelWindow?.alphaValue = 1
         panelWindow?.orderFrontRegardless()
         state.isExpanded = true
+        EventLog.shared.panelOpened()
     }
 
     private func closeIfMouseOutside() {
@@ -214,6 +215,7 @@ final class NotchController {
         isOpen = false
         state.isExpanded = false
         selection.clear()
+        EventLog.shared.panelClosed()
         panelWindow?.ignoresMouseEvents = true
 
         DispatchQueue.main.asyncAfter(deadline: .now() + hideAnimationDuration) { [weak self] in
@@ -244,13 +246,14 @@ final class NotchController {
             selection.anchorIndex = index
         }
 
-        copySelection()
+        copySelection(clickedAt: index)
     }
 
     private func copyOnly(_ screenshot: Screenshot) {
+        let index = store.items.firstIndex { $0.id == screenshot.id }
         selection.replace(with: [screenshot.id])
-        selection.anchorIndex = store.items.firstIndex { $0.id == screenshot.id }
-        copySelection()
+        selection.anchorIndex = index
+        copySelection(clickedAt: index)
     }
 
     private func selectedInScreenOrder() -> [URL] {
@@ -258,12 +261,14 @@ final class NotchController {
     }
 
     /// Порядок в буфере — как на экране, а не как в множестве выбранных.
-    private func copySelection() {
+    private func copySelection(clickedAt index: Int?) {
         let urls = selectedInScreenOrder()
         guard !urls.isEmpty else {
+            // Снятие выбора ⌘-кликом — не копирование, считать нечего.
             NSPasteboard.general.clearContents()
             return
         }
         Clipboard.copy(urls)
+        EventLog.shared.copied(count: urls.count, index: index)
     }
 }

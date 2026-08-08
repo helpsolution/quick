@@ -1,9 +1,11 @@
 import SwiftUI
 
 struct SettingsView: View {
-    let folder: URL
+    let onOpenStats: () -> Void
 
     @State private var launchAtLogin = LoginItem.isEnabled
+    @State private var analyticsEnabled = EventLog.isEnabled
+    @State private var confirmErase = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -11,13 +13,14 @@ struct SettingsView: View {
 
             Divider()
 
-            Toggle("Запускать при входе в систему", isOn: $launchAtLogin)
-                .toggleStyle(.switch)
+            switchRow("Запускать при входе в систему", isOn: $launchAtLogin)
                 .onChange(of: launchAtLogin) { _, newValue in
                     LoginItem.set(newValue)
                 }
 
-            folderRow
+            Divider()
+
+            statsRow
 
             HStack {
                 Spacer()
@@ -47,39 +50,48 @@ struct SettingsView: View {
         }
     }
 
-    private var folderRow: some View {
+    /// Подпись слева, переключатель у правого края. Обычный `Toggle` жмётся
+    /// к своему тексту, и тумблеры разных строк встают на разной высоте
+    /// по горизонтали — ряд выглядит рваным.
+    private func switchRow(_ title: String, isOn: Binding<Bool>) -> some View {
+        HStack(spacing: 12) {
+            Text(title)
+            Spacer(minLength: 8)
+            Toggle("", isOn: isOn)
+                .toggleStyle(.switch)
+                .labelsHidden()
+        }
+    }
+
+    private var statsRow: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Папка со скриншотами")
-                .font(.system(size: 12, weight: .medium))
+            switchRow("Собирать статистику", isOn: $analyticsEnabled)
+                .onChange(of: analyticsEnabled) { _, newValue in
+                    EventLog.isEnabled = newValue
+                }
 
-            HStack(spacing: 8) {
-                Text(Self.shortPath(folder))
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-
-                Spacer(minLength: 8)
-
-                Button("Открыть") { FileActions.openFolder(folder) }
-            }
-
-            // Папку задаёт сама macOS, а не Quick: менять её отсюда значило бы
-            // молча переписывать системную настройку снимков экрана.
-            Text("Берётся из системной настройки снимков экрана")
+            // Приложение не ходит в сеть вовсе — это стоит сказать прямо,
+            // а не подразумевать.
+            Text("Остаётся на этом компьютере и никуда не отправляется")
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
+
+            HStack(spacing: 8) {
+                Button("Статистика…") { onOpenStats() }
+                Spacer(minLength: 8)
+                Button("Удалить данные") { confirmErase = true }
+            }
+            .padding(.top, 6)
+        }
+        .alert("Удалить собранную статистику?", isPresented: $confirmErase) {
+            Button("Отмена", role: .cancel) {}
+            Button("Удалить", role: .destructive) { EventLog.shared.eraseAll {} }
+        } message: {
+            Text("Все накопленные события будут стёрты без возможности восстановления.")
         }
     }
 
     private static var version: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
-    }
-
-    private static func shortPath(_ url: URL) -> String {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        return url.path.hasPrefix(home)
-            ? "~" + url.path.dropFirst(home.count)
-            : url.path
     }
 }

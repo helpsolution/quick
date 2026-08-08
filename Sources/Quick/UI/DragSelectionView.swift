@@ -123,6 +123,10 @@ final class DragSelectionNSView: NSView, NSDraggingSource {
             return item
         }
 
+        // Перетаскивание засчитывается действием уже здесь: шторка закроется
+        // раньше, чем приёмник примет файлы, и к концу драга считать будет
+        // некуда.
+        MainActor.assumeIsolated { EventLog.shared.dragStarted(count: urls.count) }
         beginDraggingSession(with: items, event: event, source: self)
     }
 
@@ -131,5 +135,15 @@ final class DragSelectionNSView: NSView, NSDraggingSource {
         sourceOperationMaskFor context: NSDraggingContext
     ) -> NSDragOperation {
         .copy
+    }
+
+    /// Пустая операция означает, что файлы бросили мимо: перетаскивание было,
+    /// но ничем не кончилось.
+    func draggingSession(
+        _ session: NSDraggingSession,
+        endedAt screenPoint: NSPoint,
+        operation: NSDragOperation
+    ) {
+        MainActor.assumeIsolated { EventLog.shared.dragFinished(accepted: !operation.isEmpty) }
     }
 }

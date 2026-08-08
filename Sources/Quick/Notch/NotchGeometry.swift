@@ -1,6 +1,6 @@
 import AppKit
 
-/// Геометрия челки (или её отсутствия) на конкретном экране.
+/// Геометрия чёлки (или её отсутствия) на конкретном экране.
 struct NotchGeometry {
     let screen: NSScreen
     let hasNotch: Bool
@@ -27,12 +27,12 @@ struct NotchGeometry {
     }
 
     /// Толщина полосы у верхней кромки, в которой шторка срабатывает.
-    /// Вся высота челки не годится: по строке меню курсор ходит постоянно,
+    /// Вся высота чёлки не годится: по строке меню курсор ходит постоянно,
     /// и шторка выскакивала бы посреди обычной работы.
     static let edgeThickness: CGFloat = 3
 
     /// Зона срабатывания: курсор должен упереться в самый верх экрана в пределах
-    /// челки. Прямоугольник на пиксель выше кромки — `contains` не считает
+    /// чёлки. Прямоугольник на пиксель выше кромки — `contains` не считает
     /// верхнюю границу своей, а у края экрана курсор лежит ровно на ней.
     var triggerRect: CGRect {
         CGRect(
@@ -43,7 +43,7 @@ struct NotchGeometry {
         )
     }
 
-    /// Кадр окна панели: от верха экрана вниз, по центру челки.
+    /// Кадр окна панели: от верха экрана вниз, по центру чёлки.
     func panelWindowFrame(width: CGFloat, panelHeight: CGFloat) -> CGRect {
         let frame = screen.frame
         let totalHeight = hoverRect.height + panelHeight + PanelLayout.edgePadding
@@ -57,14 +57,14 @@ struct NotchGeometry {
 }
 
 extension NSScreen {
-    /// Ширина физического выреза. nil, если экран без челки.
+    /// Ширина физического выреза. nil, если экран без чёлки.
     var notchWidth: CGFloat? {
         guard let left = auxiliaryTopLeftArea, let right = auxiliaryTopRightArea else { return nil }
         let width = frame.width - left.width - right.width
         return width > 1 ? width : nil
     }
 
-    /// Высота челки, а на экранах без неё — высота строки меню.
+    /// Высота чёлки, а на экранах без неё — высота строки меню.
     var topInsetHeight: CGFloat {
         let inset = safeAreaInsets.top
         if inset > 1 { return inset }
