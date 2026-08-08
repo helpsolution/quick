@@ -1,0 +1,7 @@
+.build/
+build/
+dist/
+swarm-report/
+.claude/
+.idea/
+.DS_Store
