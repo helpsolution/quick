@@ -10,7 +10,7 @@ enum StatsPeriod: String, CaseIterable, Identifiable {
         case .today: return "Сегодня"
         case .week: return "7 дней"
         case .month: return "30 дней"
-        case .all: return "Всё время"
+        case .all: return "Все время"
         }
     }
 
@@ -58,7 +58,7 @@ struct StatsTotals {
     var dragsAccepted = 0
 
     /// Доля показов шторки, закончившихся копированием или перетаскиванием.
-    /// Остальное — курсор просто проехал мимо чёлки.
+    /// Остальное — курсор просто проехал мимо челки.
     var conversion: Double {
         opens > 0 ? Double(opensWithAction) / Double(opens) : 0
     }

@@ -15,7 +15,7 @@ struct NotchPanelView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Зона чёлки — прозрачная, панель выезжает из-под неё.
+            // Зона челки — прозрачная, панель выезжает из-под неё.
             Color.clear.frame(height: state.notchHeight)
 
             ZStack(alignment: .top) {
@@ -52,7 +52,7 @@ struct NotchPanelView: View {
                 .strokeBorder(.white.opacity(0.09), lineWidth: 1)
         )
         // Тени нет намеренно: прямоугольный клип, которым панель «выезжает»
-        // из-под чёлки, обрезает её резким краем — на светлых обоях это
+        // из-под челки, обрезает её резким краем — на светлых обоях это
         // выглядит как серая коробка вокруг скруглённой панели.
     }
 

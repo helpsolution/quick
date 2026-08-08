@@ -170,7 +170,7 @@ struct StatsView: View {
             ProgressView(value: min(max(totals.conversion, 0), 1))
                 .progressViewStyle(.linear)
 
-            Text("Остальные открытия — курсор просто проехал мимо чёлки")
+            Text("Остальные открытия — курсор просто проехал мимо челки")
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
         }

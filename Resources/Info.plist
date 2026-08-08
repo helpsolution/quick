@@ -25,7 +25,7 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSDesktopFolderUsageDescription</key>
-	<string>Quick показывает последние скриншоты с Рабочего стола в шторке у чёлки.</string>
+	<string>Quick показывает последние скриншоты с Рабочего стола в шторке у челки.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
 	<string>Quick показывает последние скриншоты, если папка для скриншотов настроена в Документах.</string>
 	<key>NSDownloadsFolderUsageDescription</key>
