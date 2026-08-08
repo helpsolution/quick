@@ -20,7 +20,7 @@ let fps = Double(arguments.count > 3 ? Double(arguments[3]) ?? 12 : 12)
 let output = input.deletingPathExtension().appendingPathExtension("gif")
 
 let asset = AVURLAsset(url: input)
-let duration = CMTimeGetSeconds(asset.duration)
+let duration = try await CMTimeGetSeconds(asset.load(.duration))
 guard duration > 0 else {
     print("не удалось прочитать видео")
     exit(1)
@@ -53,7 +53,7 @@ let frameProperties = [
 var written = 0
 for index in 0..<frameCount {
     let time = CMTime(seconds: Double(index) / fps, preferredTimescale: 600)
-    guard let frame = try? generator.copyCGImage(at: time, actualTime: nil) else { continue }
+    guard let frame = try? await generator.image(at: time).image else { continue }
 
     // Масштабируем до целевой ширины: гифка для README не должна весить мегабайты.
     let scale = targetWidth / CGFloat(frame.width)
