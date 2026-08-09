@@ -2,27 +2,25 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleName</key>
-	<string>Quick</string>
 	<key>CFBundleDisplayName</key>
 	<string>Quick</string>
-	<key>CFBundleIdentifier</key>
-	<string>com.fedorwork.quick</string>
 	<key>CFBundleExecutable</key>
 	<string>Quick</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.fedorwork.quick</string>
+	<key>CFBundleName</key>
+	<string>Quick</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.1</string>
+	<string>1.2</string>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>3</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
 	<key>LSUIElement</key>
-	<true/>
-	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSDesktopFolderUsageDescription</key>
 	<string>Quick показывает последние скриншоты с Рабочего стола в шторке у челки.</string>
@@ -30,5 +28,7 @@
 	<string>Quick показывает последние скриншоты, если папка для скриншотов настроена в Документах.</string>
 	<key>NSDownloadsFolderUsageDescription</key>
 	<string>Quick показывает последние скриншоты, если папка для скриншотов настроена в Загрузках.</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
 </dict>
 </plist>
