@@ -18,11 +18,14 @@ enum PanelLayout {
         padding + headerHeight + headerGap + thumbnail.height + padding
     }
 
-    static func width(for count: Int) -> CGFloat {
+    /// Ширина берётся по самой широкой вкладке, а не по текущей: переключение
+    /// вкладок не должно двигать окно — окно панели меняет размер без анимации,
+    /// и панель дёргалась бы на каждом клике по заголовку.
+    static func width(screenshots count: Int, snippetsContent: CGFloat = 0) -> CGFloat {
         let visible = max(count, 1)
-        let content = CGFloat(visible) * thumbnail.width
+        let screenshotsContent = CGFloat(visible) * thumbnail.width
             + CGFloat(visible - 1) * spacing
-            + padding * 2
+        let content = max(screenshotsContent, snippetsContent) + padding * 2
         return min(max(content, minWidth), maxWidth)
     }
 }

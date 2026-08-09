@@ -38,6 +38,16 @@ enum Clipboard {
         copy([url])
     }
 
+    /// Текст заготовки. Провайдеры прошлого копирования отпускаем: держать
+    /// открытыми файлы, которые уже никто не попросит, незачем.
+    @discardableResult
+    static func copy(text: String) -> Bool {
+        liveProviders = []
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        return pasteboard.setString(text, forType: .string)
+    }
+
     static func pngData(for url: URL) -> Data? {
         if url.pathExtension.lowercased() == "png" {
             return try? Data(contentsOf: url)

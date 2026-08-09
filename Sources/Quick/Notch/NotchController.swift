@@ -6,9 +6,11 @@ import SwiftUI
 @MainActor
 final class NotchController {
     private let store: ScreenshotStore
+    private let snippets: SnippetStore
     private let state = PanelState()
     private let selection = SelectionStore()
-    private lazy var settingsWindow = SettingsWindowController()
+    private lazy var settingsWindow = SettingsWindowController(snippets: snippets)
+    private lazy var snippetsWindow = SnippetsWindowController(store: snippets)
 
     private var geometry: NotchGeometry?
     private var hoverWindow: PassiveWindow?
@@ -22,23 +24,36 @@ final class NotchController {
     private let closeDelay: TimeInterval = 0.22
     private let hideAnimationDuration: TimeInterval = 0.35
 
-    init(store: ScreenshotStore) {
+    init(store: ScreenshotStore, snippets: SnippetStore) {
         self.store = store
+        self.snippets = snippets
     }
 
     func start() {
         rebuild()
         startMouseMonitor()
 
+        // Ширина зависит и от числа миниатюр, и от длины заготовок — пересчёт
+        // один на оба списка. Обновляем и когда закрыто: иначе первое открытие
+        // после запуска показывает панель прежней ширины.
         store.$items
             .receive(on: RunLoop.main)
-            .sink { [weak self] items in
-                guard let self else { return }
-                self.state.panelWidth = PanelLayout.width(for: items.count)
-                // Обновляем и когда закрыто — иначе первое открытие после
-                // запуска показывает панель прежней ширины.
-                self.updatePanelFrame()
-            }
+            .sink { [weak self] _ in self?.updateWidth() }
+            .store(in: &cancellables)
+
+        // Правка заготовки публикует список на каждое нажатие клавиши —
+        // мерить текст и двигать окно на каждую букву незачем.
+        snippets.$items
+            .debounce(for: .milliseconds(150), scheduler: RunLoop.main)
+            .sink { [weak self] _ in self?.updateWidth() }
+            .store(in: &cancellables)
+
+        // Эксперимент включают и выключают в настройках — шторка должна
+        // подхватить это, не дожидаясь перезапуска.
+        NotificationCenter.default
+            .publisher(for: UserDefaults.didChangeNotification)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.applyExperiments() }
             .store(in: &cancellables)
 
         NotificationCenter.default
@@ -94,7 +109,7 @@ final class NotchController {
         guard let geometry = NotchGeometry.current() else { return }
         self.geometry = geometry
         state.notchHeight = geometry.hoverRect.height
-        state.panelWidth = PanelLayout.width(for: store.items.count)
+        state.panelWidth = panelWidth
 
         if let hoverWindow {
             hoverWindow.setFrame(geometry.hoverRect, display: false)
@@ -124,11 +139,14 @@ final class NotchController {
 
         let root = NotchPanelView(
             store: store,
+            snippets: snippets,
             state: state,
             selection: selection,
             onClick: { [weak self] screenshot, index in self?.handleClick(screenshot, at: index) },
             onCopyOnly: { [weak self] screenshot in self?.copyOnly(screenshot) },
-            onOpenSettings: { [weak self] in self?.settingsWindow.show() }
+            onUseSnippet: { [weak self] snippet, index in self?.useSnippet(snippet, at: index) },
+            onOpenSettings: { [weak self] in self?.settingsWindow.show() },
+            onOpenSnippets: { [weak self] in self?.snippetsWindow.show() }
         )
         let hosting = FirstMouseHostingView(rootView: root)
         hosting.translatesAutoresizingMaskIntoConstraints = false
@@ -156,6 +174,33 @@ final class NotchController {
         window.ignoresMouseEvents = true
         window.orderOut(nil)
         return window
+    }
+
+    /// Заготовки в расчёт ширины входят только пока эксперимент включён:
+    /// выключенный раздел не должен оставлять после себя широкую шторку.
+    private var panelWidth: CGFloat {
+        let snippetsContent = state.snippetsEnabled
+            ? SnippetLayout.contentWidth(for: snippets.items, asCards: state.snippetsAsCards)
+            : 0
+        return PanelLayout.width(screenshots: store.items.count, snippetsContent: snippetsContent)
+    }
+
+    private func updateWidth() {
+        state.panelWidth = panelWidth
+        updatePanelFrame()
+    }
+
+    private func applyExperiments() {
+        let enabled = Experiments.snippetsEnabled
+        let asCards = Experiments.snippetsAsCards
+        guard enabled != state.snippetsEnabled || asCards != state.snippetsAsCards else { return }
+
+        state.snippetsEnabled = enabled
+        state.snippetsAsCards = asCards
+        // Раздел выключили, стоя на нём — возвращаемся к скриншотам, иначе
+        // шторка осталась бы с пустым содержимым.
+        if !enabled { state.tab = .screenshots }
+        updateWidth()
     }
 
     private func updatePanelFrame() {
@@ -194,6 +239,8 @@ final class NotchController {
         guard !isOpen else { return }
         isOpen = true
         store.refreshFolderIfNeeded()
+        // Разрешение могли выдать или отозвать, пока шторка была закрыта.
+        state.pasteAllowed = Paster.isTrusted
         updatePanelFrame()
         panelWindow?.ignoresMouseEvents = false
         panelWindow?.alphaValue = 1
@@ -254,6 +301,19 @@ final class NotchController {
         selection.replace(with: [screenshot.id])
         selection.anchorIndex = index
         copySelection(clickedAt: index)
+    }
+
+    /// В буфер заготовка кладётся всегда, даже когда вставить её некому:
+    /// разрешения может не быть, а ⌘V руками работает в любом случае.
+    private func useSnippet(_ snippet: Snippet, at index: Int) {
+        guard !snippet.isBlank else { return }
+        Clipboard.copy(text: snippet.text)
+        EventLog.shared.snippetUsed(index: index)
+
+        if !Paster.pasteIntoFrontmostApp() {
+            state.pasteAllowed = false
+            Paster.requestAccess()
+        }
     }
 
     private func selectedInScreenOrder() -> [URL] {

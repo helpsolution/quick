@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NotchPanelView: View {
     @ObservedObject var store: ScreenshotStore
+    @ObservedObject var snippets: SnippetStore
     @ObservedObject var state: PanelState
     /// Не @ObservedObject намеренно: панель не должна перерисовываться на
     /// каждый клик — за выбором следят только отметки на миниатюрах.
@@ -9,7 +10,9 @@ struct NotchPanelView: View {
     /// Клик с учётом зажатых модификаторов: индекс нужен для выбора диапазона.
     let onClick: (Screenshot, Int) -> Void
     let onCopyOnly: (Screenshot) -> Void
+    let onUseSnippet: (Snippet, Int) -> Void
     let onOpenSettings: () -> Void
+    let onOpenSnippets: () -> Void
 
     private var panelWidth: CGFloat { state.panelWidth }
 
@@ -56,27 +59,78 @@ struct NotchPanelView: View {
         // выглядит как серая коробка вокруг скруглённой панели.
     }
 
+    @ViewBuilder
     private var header: some View {
         HStack(spacing: 6) {
-            Text("Скриншоты")
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.55))
+            if state.snippetsEnabled {
+                tab(.screenshots, title: "Скриншоты", count: store.items.count)
+                tab(.snippets, title: "Заготовки", count: snippets.items.count)
 
-            if !store.items.isEmpty {
-                Text("\(store.items.count)")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.3))
+                if state.tab == .snippets && !state.pasteAllowed {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.orange.opacity(0.8))
+                        .help("Клик кладет заготовку в буфер. Чтобы она вставлялась сама, разрешите Quick доступ в «Универсальном доступе» — Настройки Quick → Заготовки.")
+                }
+            } else {
+                Text("Скриншоты")
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.55))
+
+                if !store.items.isEmpty {
+                    Text("\(store.items.count)")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.3))
+                }
             }
 
             Spacer()
 
-            SettingsMenu(folder: store.folder, onOpenSettings: onOpenSettings)
+            SettingsMenu(onOpenSettings: onOpenSettings)
         }
         .frame(height: PanelLayout.headerHeight)
     }
 
+    /// Заголовок раздела и есть кнопка переключения: отдельный сегментед-контрол
+    /// на 11 пунктах шрифта в шторку не помещается, а два слова — помещаются.
+    private func tab(_ tab: PanelTab, title: String, count: Int) -> some View {
+        let isActive = state.tab == tab
+        return HStack(spacing: 4) {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(isActive ? 0.85 : 0.4))
+            if count > 0 {
+                Text("\(count)")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(isActive ? 0.4 : 0.25))
+            }
+        }
+        .padding(.horizontal, 7)
+        .frame(height: PanelLayout.headerHeight)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(.white.opacity(isActive ? 0.08 : 0))
+        )
+        .contentShape(Rectangle())
+        .onTapGesture { state.tab = tab }
+    }
+
     @ViewBuilder
     private var content: some View {
+        if state.snippetsEnabled && state.tab == .snippets {
+            SnippetList(
+                store: snippets,
+                asCards: state.snippetsAsCards,
+                onUse: onUseSnippet,
+                onEdit: onOpenSnippets
+            )
+        } else {
+            screenshots
+        }
+    }
+
+    @ViewBuilder
+    private var screenshots: some View {
         if store.accessDenied {
             message(
                 "Нет доступа к папке «\(store.folder.lastPathComponent)»",
@@ -137,13 +191,14 @@ struct NotchPanelView: View {
     }
 }
 
+/// В меню только то, что больше взять негде. Папка скриншотов открывается из
+/// Finder, заготовки правятся из настроек — обе строки отсюда убраны, чтобы
+/// меню оставалось коротким.
 private struct SettingsMenu: View {
-    let folder: URL
     let onOpenSettings: () -> Void
 
     var body: some View {
         Menu {
-            Button("Открыть папку скриншотов") { FileActions.openFolder(folder) }
             Button("Настройки…") { onOpenSettings() }
             Divider()
             Button("Выйти из Quick") { NSApp.terminate(nil) }

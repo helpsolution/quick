@@ -2,9 +2,13 @@ import SwiftUI
 
 struct SettingsView: View {
     let onOpenStats: () -> Void
+    let onOpenSnippets: () -> Void
 
     @State private var launchAtLogin = LoginItem.isEnabled
     @State private var analyticsEnabled = EventLog.isEnabled
+    @State private var snippetsEnabled = Experiments.snippetsEnabled
+    @State private var snippetsAsCards = Experiments.snippetsAsCards
+    @State private var pasteAllowed = Paster.isTrusted
     @State private var confirmErase = false
 
     var body: some View {
@@ -20,6 +24,10 @@ struct SettingsView: View {
 
             Divider()
 
+            snippetsSection
+
+            Divider()
+
             statsRow
 
             HStack {
@@ -32,6 +40,11 @@ struct SettingsView: View {
         // Только ширина: высоту окно берёт из фактического размера содержимого,
         // иначе последняя кнопка обрезается нижним краем.
         .frame(width: 400)
+        // Разрешение выдают в системных настройках — узнать об этом можно
+        // только вернувшись сюда.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            pasteAllowed = Paster.isTrusted
+        }
     }
 
     private var header: some View {
@@ -62,6 +75,68 @@ struct SettingsView: View {
                 .labelsHidden()
         }
     }
+
+    // MARK: - Заготовки
+
+    private var snippetsSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            switchRow("Заготовки — эксперимент", isOn: $snippetsEnabled)
+                .onChange(of: snippetsEnabled) { _, newValue in
+                    Experiments.snippetsEnabled = newValue
+                }
+
+            Text("Второй раздел шторки: часто набираемые команды и куски текста")
+                .font(.system(size: 11))
+                .foregroundStyle(.tertiary)
+
+            if snippetsEnabled {
+                switchRow("Показывать карточками", isOn: $snippetsAsCards)
+                    .onChange(of: snippetsAsCards) { _, newValue in
+                        Experiments.snippetsAsCards = newValue
+                    }
+                    .padding(.top, 6)
+
+                Text(snippetsAsCards
+                    ? "Плитками в размер миниатюр скриншотов — длинный текст обрезается"
+                    : "Строками — команда видна целиком")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+
+                if !pasteAllowed {
+                    accessWarning
+                }
+
+                HStack(spacing: 8) {
+                    Button("Заготовки…") { onOpenSnippets() }
+                    Spacer(minLength: 8)
+                }
+                .padding(.top, 6)
+            }
+        }
+    }
+
+    /// Без доступа клик по заготовке всё равно кладёт её в буфер — об этом
+    /// говорим прямо, иначе выглядит как поломка.
+    private var accessWarning: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+                .font(.system(size: 12))
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Пока Quick нет в «Универсальном доступе», клик по заготовке только копирует ее — вставлять придется самому, через ⌘V.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Открыть Настройки…") {
+                    Paster.requestAccess()
+                    Paster.openAccessibilitySettings()
+                }
+            }
+        }
+        .padding(.top, 6)
+    }
+
+    // MARK: - Статистика
 
     private var statsRow: some View {
         VStack(alignment: .leading, spacing: 6) {
