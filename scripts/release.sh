@@ -28,7 +28,11 @@ echo "==> Иконка"
 swift "$ROOT/scripts/make-icon.swift" >/dev/null
 
 echo "==> Сборка $APP_NAME $VERSION"
-"$ROOT/scripts/build.sh" >/dev/null
+# Локальная сборка подписывается постоянной личностью из связки ключей, чтобы
+# не слетали разрешения macOS. Раздаче она не годится: сертификат разработки
+# чужим машинам ничего не даёт, а Team ID лишний раз светить незачем.
+# Поэтому здесь — ad-hoc, а настоящую подпись ставим ниже.
+QUICK_ADHOC=1 "$ROOT/scripts/build.sh" >/dev/null
 
 if [ -n "${QUICK_SIGN_IDENTITY:-}" ]; then
   echo "==> Подпись Developer ID"
