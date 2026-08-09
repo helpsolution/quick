@@ -56,8 +56,9 @@ struct StatsTotals {
     var images = 0
     var drags = 0
     var dragsAccepted = 0
+    var snippets = 0
 
-    /// Доля показов шторки, закончившихся копированием или перетаскиванием.
+    /// Доля показов шторки, закончившихся действием.
     /// Остальное — курсор просто проехал мимо челки.
     var conversion: Double {
         opens > 0 ? Double(opensWithAction) / Double(opens) : 0
@@ -122,7 +123,9 @@ struct StatsReport {
     var medianSecondsToClick: Double?
 
     var isEmpty: Bool {
-        (totals[.all]?.opens ?? 0) == 0 && (totals[.all]?.copies ?? 0) == 0
+        (totals[.all]?.opens ?? 0) == 0
+            && (totals[.all]?.copies ?? 0) == 0
+            && (totals[.all]?.snippets ?? 0) == 0
     }
 
     func totals(for period: StatsPeriod) -> StatsTotals {
@@ -275,6 +278,8 @@ private extension StatsTotals {
         case .drag:
             drags += 1
             if event.ok == true { dragsAccepted += 1 }
+        case .snippet:
+            snippets += 1
         }
     }
 }

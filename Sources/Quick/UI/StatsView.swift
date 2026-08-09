@@ -64,8 +64,9 @@ struct StatsView: View {
 
     // MARK: - Счётчики
 
-    /// Все четыре в одну строку: окно достаточно широкое, а разбивка на два
-    /// ряда заставляла бы сравнивать числа по диагонали.
+    /// Всё в одну строку: окно достаточно широкое, а разбивка на два ряда
+    /// заставляла бы сравнивать числа по диагонали. Заготовки появляются
+    /// пятой карточкой, только если ими вообще пользовались.
     private func counters(_ totals: StatsTotals) -> some View {
         HStack(spacing: 12) {
             counter("Открытий шторки", totals.opens)
@@ -74,6 +75,9 @@ struct StatsView: View {
             counter("Перетаскиваний", totals.drags, note: totals.drags > 0
                 ? "доставлено: \(Self.number(totals.dragsAccepted))"
                 : nil)
+            if totals.snippets > 0 {
+                counter("Заготовок", totals.snippets)
+            }
         }
     }
 
@@ -156,7 +160,9 @@ struct StatsView: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(Self.percent(totals.conversion))
                     .font(.system(size: 22, weight: .semibold, design: .rounded))
-                Text("открытий закончились копированием или перетаскиванием")
+                Text(totals.snippets > 0
+                    ? "открытий закончились действием"
+                    : "открытий закончились копированием или перетаскиванием")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                 Spacer(minLength: 0)

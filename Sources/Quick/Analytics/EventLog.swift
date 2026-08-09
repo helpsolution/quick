@@ -78,6 +78,18 @@ final class EventLog {
         ))
     }
 
+    /// - Parameter index: позиция заготовки в списке.
+    func snippetUsed(index: Int?) {
+        guard enabled else { return }
+        panelDidAct = true
+        record(AnalyticsEvent(
+            kind: .snippet,
+            time: Date(),
+            index: index,
+            seconds: panelOpenedAt.map { Date().timeIntervalSince($0) }
+        ))
+    }
+
     /// Перетаскивание засчитывается как действие уже в начале: шторка успевает
     /// закрыться раньше, чем приёмник примет файлы.
     func dragStarted(count: Int) {
