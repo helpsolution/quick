@@ -168,11 +168,14 @@ final class NotchController {
         // следуют за оформлением системы и днём становятся тёмными на тёмном.
         window.appearance = NSAppearance(named: .darkAqua)
         // Пока шторка закрыта, окно не должно ни рисоваться, ни перехватывать
-        // клики по строке меню — orderOut одного мало, SwiftUI-хостинг умеет
-        // вернуть окно на экран сам.
+        // клики по строке меню. Держится это на alpha и ignoresMouseEvents, а
+        // с экрана окно не убирается никогда: убранное окно теряет членство в
+        // Spaces и в полноэкранные Spaces, созданные позже, `.canJoinAllSpaces`
+        // его уже не возвращает — шторка открывалась бы вслепую, оставаясь
+        // видимой только на том рабочем столе, где родилась.
         window.alphaValue = 0
         window.ignoresMouseEvents = true
-        window.orderOut(nil)
+        window.orderFrontRegardless()
         return window
     }
 
@@ -268,7 +271,6 @@ final class NotchController {
         DispatchQueue.main.asyncAfter(deadline: .now() + hideAnimationDuration) { [weak self] in
             guard let self, !self.isOpen else { return }
             self.panelWindow?.alphaValue = 0
-            self.panelWindow?.orderOut(nil)
         }
     }
 
